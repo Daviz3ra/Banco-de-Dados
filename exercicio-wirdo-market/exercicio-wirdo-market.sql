@@ -44,24 +44,27 @@ INSERT INTO transactions (product_id, amount, reason) VALUES (5, 30, 'compra_for
 INSERT INTO transactions (product_id, amount, reason) VALUES (6, 5, 'compra_fornecedor'); -- Webcam
 INSERT INTO transactions (product_id, amount, reason) VALUES (7, 100, 'compra_fornecedor'); -- Mousepad
 
-
 BEGIN;
 
-INSERT INTO transactions (product_id, amount, reason) VALUES (1, -5, 'venda_cliente');
-UPDATE products SET quantity = quantity + (-5) WHERE id = 1;
-INSERT INTO orders(client_id, status) VALUES (3, 'pendente')
+INSERT INTO orders(client_id, status) VALUES (3, 'pendente');
+INSERT INTO transactions (product_id, amount, reason, order_id) VALUES (1, -5, 'venda_cliente', 1);
 INSERT INTO order_items (order_id, product_id, quantity, unit_price)
-SELECT 100, id, 2, price 
-FROM products 
-WHERE id = 3;
+SELECT 1, id, ABS(-5), price 
+FROM products
+WHERE id=1;
+UPDATE products SET quantity = quantity + (-5) WHERE id = 1;
 
 COMMIT;
 
 -- C:
-SELECT * from products WHERE quantity<5; --1
-SELECT SUM(price * quantity) AS valor_total_estoque FROM products; --2
-SELECT * from transactions ORDER BY date_hour DESC LIMIT 5; --3
-SELECT * from transactions WHERE product_id=2; --4
+--1
+SELECT * from products WHERE quantity<5;
+--2
+SELECT SUM(price * quantity) AS valor_total_estoque FROM products;
+--3
+SELECT * from transactions ORDER BY date_hour DESC LIMIT 5;
+--4
+SELECT * from transactions WHERE product_id=2;
 
 CREATE TABLE IF NOT EXISTS 'clients' (
 id INTEGER PRIMARY KEY AUTOINCREMENT, 
@@ -70,7 +73,12 @@ email TEXT UNIQUE NOT NULL,
 date_of_registration DATE DEFAULT CURRENT_DATE
 )
 
---CONTINUAR: criar table orders e adicionar o processo de inserir uma order nessa table quando é feito um insert into transactions (RETORNAR A PARTIR DO EXERCICIO 2 DO NIVEL 2)
+INSERT INTO clients (name, email) VALUES ('Ana Silva', 'ana.silva@email.com');
+INSERT INTO clients (name, email) VALUES ('Bruno Oliveira', 'bruno.obj@email.com');
+INSERT INTO clients (name, email) VALUES ('Carla Souza', 'carla.tech@email.com');
+INSERT INTO clients (name, email) VALUES ('Diego Santos', 'diego.s@email.com');
+INSERT INTO clients (name, email) VALUES ('Fernanda Lima', 'fer.lima@email.com');
+
 CREATE TABLE IF NOT EXISTS 'orders' (
 id INTEGER PRIMARY KEY AUTOINCREMENT, 
 date_hour DEFAULT CURRENT_TIMESTAMP, 
@@ -79,7 +87,7 @@ status TEXT NOT NULL CHECK(status IN ('pendente', 'pago', 'enviado', 'entregue',
 FOREIGN KEY (client_id) REFERENCES clients(id)
 )
 
-CREATE TABLE order_items(
+CREATE TABLE IF NOT EXISTS 'order_items'(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     order_id INTEGER NOT NULL,
     product_id INTEGER NOT NULL,
@@ -88,3 +96,21 @@ CREATE TABLE order_items(
     FOREIGN KEY (order_id) REFERENCES orders(id),
     FOREIGN KEY (product_id) REFERENCES products(id)
 )
+
+-- C:
+--1 (Se fosse fazer pelo nome, seria muito trabalho sem sentido)
+SELECT * FROM orders WHERE client_id=3;
+--2
+SELECT unit_price * quantity AS total FROM order_items GROUP BY order_id;
+--3
+SELECT orders.client_id, order_items.unit_price * order_items.quantity AS total 
+FROM order_items
+JOIN orders ON order_items.id = orders.id 
+GROUP BY client_id 
+ORDER BY total DESC;
+--4
+SELECT orders.id, orders.date_hour, orders.status, orders.client_id, clients.name, clients.email, clients.date_of_registration
+FROM orders 
+JOIN order_items ON orders.id = order_items.id 
+JOIN clients ON clients.id = orders.client_id
+WHERE order_items.product_id = 1;
