@@ -266,3 +266,21 @@ COMMIT;
 --? Exercícios C(3):
 --*1
 SELECT product_id, amount FROM transactions WHERE reason = 'estorno_cancelamento' AND order_id = 1;
+--*2
+SELECT '2026-05' AS 'year-month', COUNT(orders.id) AS orders_total, SUM(order_items.quantity*order_items.unit_price) AS total_value, SUM(order_items.quantity) AS sold_items, (SUM(order_items.quantity*order_items.unit_price)/COUNT(orders.id)) AS avg_value_by_order
+FROM order_items 
+JOIN orders ON order_items.order_id = orders.id
+WHERE orders.status != 'cancelado' AND strftime('%Y-%m', orders.created_at) = '2026-05'
+--*3
+SELECT products.name 
+FROM products
+WHERE products.id NOT IN (
+  SELECT order_items.product_id FROM order_items 
+  JOIN orders ON orders.id = order_items.id
+  WHERE orders.created_at >= DATETIME('now', '-30 days') AND orders.status != 'cancelado'
+);
+--*4
+SELECT * FROM order_events WHERE order_id IN(
+SELECT order_id FROM order_events WHERE new_value = 'cancelado'
+)
+ORDER BY order_id, created_at;
